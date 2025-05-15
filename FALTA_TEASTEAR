@@ -1,0 +1,115 @@
+Basándonos en tus contratos SecureBorrowing.sol y Arbitration.sol, aquí tienes una lista de tests adicionales que serían valiosos, especialmente enfocados en el flujo de arbitraje y disputas:
+
+**I. Tests para Arbitration.sol**
+
+1.  **`openDispute`**:
+    *   **Rechazo si el llamante no es `secureBorrowingContract`**: Intentar llamar `openDispute` desde una cuenta que no sea la del contrato `SecureBorrowing`.
+    *   **Rechazo si la disputa ya está activa o resuelta**: Intentar abrir una disputa para un `originalTransactionId` que ya tiene una disputa activa o una que ya fue resuelta.
+    *   **Rechazo si no se envía suficiente ETH para el `incentivePool`**: Enviar menos ETH del `expectedIncentivePool`.
+    *   **Rechazo si no hay árbitros configurados en `arbitratorsPanel`**: Desplegar el contrato sin llamar a `setArbitratorsPanel` e intentar abrir una disputa.
+    *   **Apertura exitosa**:
+        *   Verificar que el evento `DisputeOpened` se emita con los argumentos correctos.
+        *   Verificar que el estado de `disputesData[originalTransactionId]` se actualice correctamente (itemOwner, borrower, depositAtStake, incentivePoolPaidIn, creationTime, isActive, isResolved, votesCasted, disputeArbitrators).
+        *   Verificar que el balance del contrato `Arbitration` aumente por `msg.value`.
+
+2.  **`castArbitratorVote`**:
+    *   **Rechazo si el llamante no es un árbitro asignado a esa disputa**.
+    *   **Rechazo si la disputa no está activa o ya está resuelta**.
+    *   **Rechazo si el período de votación ha terminado**.
+    *   **Rechazo si el árbitro ya votó en esa disputa**.
+    *   **Rechazo si `voteInFavorOfOwner` es `true` pero `damageSeverityPercentage` es 0 o > 100**.
+    *   **Voto exitoso**:
+        *   Verificar que el evento `ArbitratorVoteCastInArbitration` se emita con los argumentos correctos.
+        *   Verificar que `disputesData[originalTransactionId]` se actualice (arbitratorDamageSeverity, arbitratorVoteInFavorOfOwner, arbitratorHasVoted, votesCasted).
+    *   **Múltiples votos**: Probar que varios árbitros (o todos) puedan votar correctamente.
+
+ rm -fr errors && bunx hardhat clean && bunx hardhat compile  && bunx hardhat test --verbose test/ArbitrationFinalization.t.ts   > errors
+
+
+3.  **`finalizeDispute`**:
+    *   **Rechazo si la disputa no está activa o ya está resuelta**.
+    *   **Rechazo si el período de votación no ha terminado Y no todos los árbitros asignados han votado**.
+    *   **Finalización exitosa en diferentes escenarios de votación**:
+        *   **Gana el propietario (mayoría de votos)**:
+            *   Verificar cálculo correcto de `penaltyToOwner` y `refundToBorrower` basado en `averageSeverityOwner`.
+            *   Verificar `ownerWonDisputeDecision = true`.
+        *   **Gana el prestatario (mayoría de votos)**:
+            *   Verificar `penaltyToOwner = 0` y `refundToBorrower = dispute.depositAtStake`.
+            *   Verificar `ownerWonDisputeDecision = false`.
+        *   **Empate en votos**:
+            *   Verificar `penaltyToOwner` y `refundToBorrower` (división 50/50, manejando el wei restante).
+            *   Verificar `ownerWonDisputeDecision = false` (o según tu lógica de desempate si la cambias).
+        *   **Ningún árbitro votó**:
+            *   Verificar `penaltyToOwner = 0` y `refundToBorrower = dispute.depositAtStake`.
+            *   Verificar que `incentivePoolPaidIn` se devuelva al prestatario (o al owner del contrato si falla el prestatario).
+            *   Verificar que `actualIncentivePoolToDistribute` sea 0.
+    *   **Distribución de incentivos**:
+        *   Verificar cálculo y pago correcto de `finalizerShare` al `msg.sender`.
+        *   Verificar cálculo y pago correcto de `individualArbitratorIncentive` a cada árbitro que votó (manejando el `remainderForArbitrators`).
+        *   Verificar que si `poolForArbitrators` es 0 o no hay votantes válidos, los incentivos no se distribuyan o se devuelvan al owner.
+        *   Verificar que los eventos `FinalizerIncentivePaid` y `ArbitratorIncentivePaid` se emitan correctamente.
+        *   Verificar el evento `UnusedIncentivesReturned` si aplica.
+    *   **Actualización de reputación de árbitros**:
+        *   Verificar que los árbitros que votaron reciban +1 de reputación.
+        *   Verificar que los árbitros asignados que no votaron reciban -2 de reputación.
+    *   **Llamada a `secureBorrowingContract.processArbitrationOutcome`**:
+        *   Verificar que se llame con los argumentos correctos derivados de la finalización.
+    *   **Actualización de estado de la disputa**:
+        *   Verificar `isResolved = true`, `isActive = false`.
+    *   **Evento `DisputeFinalizedInArbitration`**: Verificar que se emita con los argumentos correctos.
+    *   **Reentrancy Guard**: Intentar una llamada reentrante a `finalizeDispute`.
+
+4.  **`updateVotingPeriod`**:
+    *   Rechazo si el nuevo período está fuera de los límites `MIN_VOTING_PERIOD` y `MAX_VOTING_PERIOD`.
+    *   Éxito: verificar que `disputeVotingPeriod` se actualice y se emita `VotingPeriodUpdated`.
+
+5.  **`setArbitratorsPanel`**:
+    *   Rechazo si alguna dirección de árbitro es `address(0)`.
+    *   Éxito: verificar que `arbitratorsPanel` se actualice y se emita `ArbitratorsPanelUpdated`.
+    *   Verificar que cambiar el panel no afecte a disputas ya abiertas (usan los árbitros asignados en `openDispute`).
+
+6.  **`withdrawStuckETH`**:
+    *   Rechazo si el llamante no es el `owner`.
+    *   Rechazo si `to` es `address(0)`.
+    *   Rechazo si el balance del contrato es insuficiente.
+    *   Éxito: verificar que la cantidad correcta de ETH se transfiera a la dirección `to`.
+
+**II. Tests para SecureBorrowing.sol (relacionados con el arbitraje)**
+
+1.  **`settleTransaction` (rama de reporte de daño con depósito > 0)**:
+    *   (Ya tienes un test para esto que verifica `DisputeSentToArbitration` y el envío de ETH).
+    *   Adicional: Verificar que `activeLoanCount` decremente y `activeDisputeCount` incremente.
+    *   Adicional: Verificar que `txn.isConcluded` y `txn.damageReported` se marquen como `true`.
+
+2.  **`processArbitrationOutcome`**:
+    *   **Rechazo si el llamante no es `arbitrationContract`**.
+    *   **Rechazo si la transacción no está marcada como `isConcluded` y `damageReported`**.
+    *   **Rechazo si `itemOwnerFromArbitration` es `address(0)`**.
+    *   **Rechazo si `borrowerFromArbitration` no coincide con `txn.borrower`**.
+    *   **Rechazo si `totalArbitrationPayout` (penalty + refund) > `txn.depositPaid`**.
+    *   **Procesamiento exitoso**:
+        *   **Caso: El propietario del ítem ganó la disputa (`ownerWonDispute = true`)**:
+            *   Verificar que `items[txn.itemId].isAvailable` se marque como `true` (si el ítem aún existe).
+            *   Verificar que `activeDisputeCount` decremente.
+            *   Verificar que `txn.amountFromDepositPaidToOwner` y `txn.amountFromDepositRefundedToBorrower` se actualicen correctamente.
+            *   Verificar las actualizaciones de reputación: prestatario (`-_calculateReputationChange(penaltyAmount...)`), propietario (`+1`).
+            *   Verificar que el evento `ArbitrationOutcomeProcessed` se emita con los argumentos correctos.
+            *   Verificar las transferencias de ETH: `penaltyAmountToOwnerFromArbitration` al propietario del ítem, `refundAmountToBorrowerFromArbitration` al prestatario.
+        *   **Caso: El prestatario ganó la disputa (`ownerWonDispute = false`)**:
+            *   Similar al anterior, pero con diferentes actualizaciones de reputación: propietario (`-_calculateReputationChange(refundAmount...)`), prestatario (`+1`).
+            *   Verificar las transferencias de ETH.
+        *   **Caso: El ítem fue deslistado durante la disputa** (`items[txn.itemId].owner == address(0)`):
+            *   Verificar que no intente marcar `isAvailable = true` para un ítem que no existe.
+            *   El resto del flujo debería funcionar (pagos, reputación al `itemOwnerFromArbitration`).
+
+**III. Tests de Interacción y Casos Borde Generales**
+
+*   **Pausar/Despausar**:
+    *   Verificar que las funciones críticas de arbitraje (`castArbitratorVote`, `finalizeDispute` en Arbitration.sol; `processArbitrationOutcome` en SecureBorrowing.sol) no funcionen cuando el contrato respectivo está pausado.
+*   **Suspensión/Baneo de Usuarios**:
+    *   ¿Qué sucede si un árbitro es suspendido/baneado (en `SecureBorrowing`)? ¿Afecta su capacidad de votar en `Arbitration`? (Actualmente no, ya que son sistemas de reputación separados, pero es bueno considerarlo).
+    *   ¿Qué sucede si el propietario o prestatario de una disputa son suspendidos/baneados en `SecureBorrowing` mientras la disputa está en `Arbitration`? (El proceso de arbitraje debería continuar).
+*   **Límites de Reputación**:
+    *   Asegurarse de que las actualizaciones de reputación en `SecureBorrowing` (después de `processArbitrationOutcome`) respeten `MAX_REPUTATION` y `MIN_REPUTATION`.
+
+Estos tests te darán una cobertura mucho más robusta de todo el ciclo de vida de las disputas y el proceso de arbitraje. ¡Buena suerte!

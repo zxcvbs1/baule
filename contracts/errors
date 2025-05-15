@@ -1,0 +1,22 @@
+
+
+  Tests de Arbitration
+    openDispute
+      ✔ Should reject if caller is not the SecureBorrowing contract (1048ms)
+      ✔ Should reject if no arbitrators are configured in arbitratorsPanel (when called by SecureBorrowing)
+      ✔ Should successfully open a dispute when called by SecureBorrowing contract
+      ✔ Should reject if dispute is already active
+      ✔ Should reject if not enough ETH is sent for the incentive pool
+    castArbitratorVote
+      ✔ Should reject if caller is not an assigned arbitrator
+      ✔ Should reject if dispute is not active
+      ✔ Should reject if voting period has ended
+      ✔ Should reject if arbitrator already voted
+      ✔ Should reject if voteInFavorOfOwner is true but damageSeverityPercentage is 0 or > 100
+      ✔ Should reject if voteInFavorOfOwner is true and damageSeverityPercentage is 0
+      ✔ Should successfully cast a vote and update state correctly
+      ✔ Should allow multiple arbitrators to vote correctly
+
+
+  13 passing (1s)
+

@@ -1,0 +1,412 @@
+(async function() {
+    var contractAddress = "0x0fC5025C764cE34df352757e82f7B5c4Df39A836";
+    var borrowerAddress = "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2";
+    var ownerAccount = "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4";
+    var contract = new web3.eth.Contract(contractABI, contractAddress);
+    
+    var DOMAIN_SEPARATOR = await contract.methods.DOMAIN_SEPARATOR().call();
+    console.log("DOMAIN_SEPARATOR:", DOMAIN_SEPARATOR);
+    
+    var itemId = "0x0000000000000000000000000000000000000000000000000000000000000001";
+    var fee = "10000000000000000";
+    var deposit = "100000000000000000";
+    
+    var item = await contract.methods.items(itemId).call();
+    var nonce = item.nonce;
+    console.log("Nonce actual:", nonce);
+    
+    var BORROW_TYPEHASH = web3.utils.keccak256("Borrow(bytes32 itemId,uint256 fee,uint256 deposit,uint256 nonce,address borrower)");
+    var encodedData = web3.eth.abi.encodeParameters(
+      ['bytes32', 'bytes32', 'uint256', 'uint256', 'uint256', 'address'],
+      [BORROW_TYPEHASH, itemId, fee, deposit, nonce, borrowerAddress]
+    );
+    var messageHash = web3.utils.keccak256(encodedData);
+    var digest = web3.utils.keccak256(
+      "0x1901" + DOMAIN_SEPARATOR.substring(2) + messageHash.substring(2)
+    );
+    
+    var signature = await web3.eth.sign(digest, ownerAccount);
+    console.log("Firma para borrowItem:", signature);
+    return signature;
+  })()
+
+
+
+
+
+
+
+const contractAddress = "0x0fC5025C764cE34df352757e82f7B5c4Df39A836"
+const borrowerAddress = "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2"
+const ownerAccount = "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4"
+const contractABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "itemId",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "fee",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "deposit",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "ownerSignature",
+				"type": "bytes"
+			}
+		],
+		"name": "borrowItem",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "ECDSAInvalidSignature",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "length",
+				"type": "uint256"
+			}
+		],
+		"name": "ECDSAInvalidSignatureLength",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "s",
+				"type": "bytes32"
+			}
+		],
+		"name": "ECDSAInvalidSignatureS",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "itemId",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "fee",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "deposit",
+				"type": "uint256"
+			}
+		],
+		"name": "ItemListed",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "itemId",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "fee",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "deposit",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "metadataHash",
+				"type": "bytes32"
+			}
+		],
+		"name": "listItem",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "transactionId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "reportDamage",
+				"type": "bool"
+			}
+		],
+		"name": "settleTransaction",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "transactionId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "bytes32",
+				"name": "itemId",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "borrower",
+				"type": "address"
+			}
+		],
+		"name": "TransactionCreated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "transactionId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "refund",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "penalty",
+				"type": "uint256"
+			}
+		],
+		"name": "TransactionSettled",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "borrowerReputation",
+		"outputs": [
+			{
+				"internalType": "int256",
+				"name": "",
+				"type": "int256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "DOMAIN_SEPARATOR",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "items",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "nonce",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "fee",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "deposit",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "metadataHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bool",
+				"name": "isAvailable",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "ownerReputation",
+		"outputs": [
+			{
+				"internalType": "int256",
+				"name": "",
+				"type": "int256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "transactionCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "transactions",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "borrower",
+				"type": "address"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "itemId",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "feePaid",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "depositPaid",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "returnTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isSettled",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "damageReported",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
+const contract = new web3.eth.Contract(contractABI, contractAddress)
+
+// Obtén el DOMAIN_SEPARATOR
+const DOMAIN_SEPARATOR = await contract.methods.DOMAIN_SEPARATOR().call()
+
+// Parámetros para la firma
+const itemId = "0x0000000000000000000000000000000000000000000000000000000000000001"
+const fee = "10000000000000000"
+const deposit = "100000000000000000"
+const nonce = 0 // El primer préstamo tiene nonce 0
+
+// Crear el digest para firma
+const BORROW_TYPEHASH = web3.utils.keccak256("Borrow(bytes32 itemId,uint256 fee,uint256 deposit,uint256 nonce,address borrower)")
+const encodedData = web3.eth.abi.encodeParameters(
+  ['bytes32', 'bytes32', 'uint256', 'uint256', 'uint256', 'address'],
+  [BORROW_TYPEHASH, itemId, fee, deposit, nonce, borrowerAddress]
+)
+const messageHash = web3.utils.keccak256(encodedData)
+const digest = web3.utils.keccak256(
+  "0x1901" + DOMAIN_SEPARATOR.substring(2) + messageHash.substring(2)
+)
+
+// Firmar mensaje (como propietario)
+const signature = await web3.eth.sign(digest, ownerAccount)
+console.log("Firma para borrowItem:", signature)
