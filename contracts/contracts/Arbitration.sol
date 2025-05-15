@@ -34,7 +34,11 @@ contract Arbitration is Ownable, Pausable, ReentrancyGuard { // Heredar de OZ
         bool isResolved;
     }
 
-    mapping(address => uint256) public arbitratorReputation;
+    mapping(address => int256) public arbitratorReputation;
+
+    int256 public constant MAX_ARBITRATOR_REPUTATION = 10000;
+    int256 public constant MIN_ARBITRATOR_REPUTATION = -10000;
+
     mapping(uint256 => DisputeInfo) public disputesData;
 
     uint256 public disputeVotingPeriod = 7 days;
@@ -51,7 +55,7 @@ contract Arbitration is Ownable, Pausable, ReentrancyGuard { // Heredar de OZ
     event DisputeFinalizedInArbitration(uint256 indexed originalTransactionId, bool ownerWon, uint256 penaltyToOwner, uint256 refundToBorrower, address finalizer);
     event ArbitratorIncentivePaid(uint256 indexed originalTransactionId, address indexed arbitrator, uint256 amount);
     event FinalizerIncentivePaid(uint256 indexed originalTransactionId, address indexed finalizer, uint256 amount);
-    event ReputationUpdated(address indexed arbitrator, int256 reputationChange, uint256 newReputation);
+    event ReputationUpdated(address indexed arbitrator, int256 reputationChange, int256 newReputation);
     event DisputeOpened(uint256 indexed originalTransactionId, address itemOwner, address borrower, uint256 depositAtStake, uint256 incentivePoolAmount);
     event VotingPeriodUpdated(uint256 newPeriod);
     event ArbitratorsPanelUpdated(address[3] newArbitrators);
@@ -156,17 +160,16 @@ contract Arbitration is Ownable, Pausable, ReentrancyGuard { // Heredar de OZ
     }
 
     function _updateArbitratorReputation(address arbitrator, int256 change) internal {
-        uint256 currentReputation = arbitratorReputation[arbitrator];
-        uint256 newReputation;
-        if (change >= 0) {
-            newReputation = currentReputation + uint256(change);
-        } else {
-            if (currentReputation >= uint256(-change)) {
-                newReputation = currentReputation - uint256(-change);
-            } else {
-                newReputation = 0; // Reputación no puede ser negativa
-            }
+        int256 currentReputation = arbitratorReputation[arbitrator];
+        int256 newReputation = currentReputation + change;
+        
+        // Apply boundaries
+        if (newReputation > MAX_ARBITRATOR_REPUTATION) {
+            newReputation = MAX_ARBITRATOR_REPUTATION;
+        } else if (newReputation < MIN_ARBITRATOR_REPUTATION) {
+            newReputation = MIN_ARBITRATOR_REPUTATION;
         }
+        
         arbitratorReputation[arbitrator] = newReputation;
         emit ReputationUpdated(arbitrator, change, newReputation);
     }
@@ -292,7 +295,7 @@ contract Arbitration is Ownable, Pausable, ReentrancyGuard { // Heredar de OZ
                         // Si incentiveThisArbitrator es 0, o no hay balance, la reputación ya fue acreditada.
                     } else { 
                         // No votó en absoluto
-                        _updateArbitratorReputation(arbitrator, -2); 
+                        _updateArbitratorReputation(arbitrator, -1); // Change from -2 to -1
                     }
                 }
             } else if (poolForArbitrators > 0) { 
@@ -307,7 +310,7 @@ contract Arbitration is Ownable, Pausable, ReentrancyGuard { // Heredar de OZ
                 if (dispute.arbitratorHasVoted[arbitrator]) {
                     _updateArbitratorReputation(arbitrator, 1); // Votó, merece reputación positiva
                 } else {
-                    _updateArbitratorReputation(arbitrator, -2); // No votó
+                    _updateArbitratorReputation(arbitrator, -1); // Change from -2 to -1
                 }
             }
         }
