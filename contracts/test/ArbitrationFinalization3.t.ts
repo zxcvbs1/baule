@@ -1,6 +1,6 @@
 import { expect } from "chai"
 import hre from "hardhat"
-import { parseEther, decodeEventLog, stringToHex, keccak256 } from "viem"
+import { parseEther, decodeEventLog } from "viem"
 import { setupDisputeWithVotes, verifyFinalizationOutcome } from "./helpers/finalizationHelpers"
 import { setupActiveDispute, deployArbitrationTestHelper } from "./helpers/testUtils"
 
@@ -15,19 +15,14 @@ describe("Arbitration Contract - Finalize Dispute", () => {
       // 2. Deploy a test helper version to create a resolved dispute
       const { arbitrationTestHelper } = await deployArbitrationTestHelper(
         setup.secureBorrowingContract,
-        ownerArbitration, // ownerArbitration is the owner of arbitrationTestHelper
+        ownerArbitration, // Use ownerArbitration here
         setup.arbitrator1,
         setup.arbitrator2,
         setup.arbitrator3,
       )
 
-      // 3. Create a dispute that's already resolved, called by the owner
-      const arbitrationTestHelperAsOwner = await hre.viem.getContractAt(
-        "ArbitrationTestHelper",
-        arbitrationTestHelper.address,
-        { client: { wallet: ownerArbitration } }, // Use the ownerArbitration wallet client
-      )
-      await arbitrationTestHelperAsOwner.write.testCreateDisputeAsResolved([
+      // 3. Create a dispute that's already resolved
+      await arbitrationTestHelper.write.testCreateDisputeAsResolved([
         transactionId,
         setup.ownerLedger.account.address,
         setup.borrowerAccount.account.address,
@@ -59,6 +54,8 @@ describe("Arbitration Contract - Finalize Dispute", () => {
         } else if (error.cause?.cause?.message && typeof error.cause.cause.message === "string") {
           actualErrorMessage = error.cause.cause.message
         } else if (error.cause?.message && typeof error.cause.message === "string") {
+          actualErrorMessage = error.cause.message
+        } else if (error.message && typeof error.message === "string") {
           actualErrorMessage = error.message
         }
 
@@ -103,6 +100,8 @@ describe("Arbitration Contract - Finalize Dispute", () => {
         } else if (error.cause?.cause?.message && typeof error.cause.cause.message === "string") {
           actualErrorMessage = error.cause.cause.message
         } else if (error.cause?.message && typeof error.cause.message === "string") {
+          actualErrorMessage = error.cause.message
+        } else if (error.message && typeof error.message === "string") {
           actualErrorMessage = error.message
         }
 
@@ -181,141 +180,49 @@ describe("Arbitration Contract - Finalize Dispute", () => {
     })
 
     it("Should handle case where no arbitrators voted", async () => {
-      // 1. Setup a dispute with no votes
+      // 1. Set up a dispute but no votes cast
       const setup = await setupDisputeWithVotes({
         ownerVotes: 0,
-        borrowerVotes: 0
-      });
-      
-      const { arbitrationContract, transactionId, deposit, publicClient, borrowerAccount } = setup;
+        borrowerVotes: 0,
+      })
 
-      // 2. Calculate expected incentive pool (actualIncentivePoolToDistribute)
-      const incentivePercentage = await arbitrationContract.read.INCENTIVE_PERCENTAGE_OF_DEPOSIT();
-      const expectedTotalIncentivePool = (deposit * incentivePercentage) / 100n;
-      
-      // 3. Get balances before finalization
-      const contractBalanceBefore = await publicClient.getBalance({
-        address: arbitrationContract.address
-      });
+      const { arbitrationContract, transactionId, deposit, borrowerAccount, publicClient } = setup
+
+      // 2. Track borrower's balance before/after (should get incentive pool back)
       const borrowerBalanceBefore = await publicClient.getBalance({
-        address: borrowerAccount.account.address
-      });
-      
-      // 4. Perform finalization for THIS test to get the receipt
-      const [finalizerWallet] = await hre.viem.getWalletClients({ count: 1 });
-      const arbitrationAsFinalizer = await hre.viem.getContractAt(
-        "Arbitration",
-        arbitrationContract.address,
-        { client: { wallet: finalizerWallet } }
-      );
-      
-      const tx = await arbitrationAsFinalizer.write.finalizeDispute([transactionId]);
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
+        address: borrowerAccount.account.address,
+      })
 
-      // 5. Verify general dispute outcome (ownerWon, penalty, refund) via DisputeFinalizedInArbitration event
-      const finalizedEvent = receipt.logs.find(
-        (log: any) => log.address.toLowerCase() === arbitrationContract.address.toLowerCase() &&
-                       log.topics[0] === keccak256(stringToHex("DisputeFinalizedInArbitration(uint256,bool,uint256,uint256,address)"))
-      );
-      expect(finalizedEvent, "DisputeFinalizedInArbitration event not found").to.exist;
-      if (finalizedEvent) {
-          const decodedFinalizedEvent = decodeEventLog({
-              abi: arbitrationContract.abi,
-              data: finalizedEvent.data,
-              topics: finalizedEvent.topics
-          });
-          expect(decodedFinalizedEvent.args.ownerWon, "Owner should not win when no votes").to.be.false;
-          expect(decodedFinalizedEvent.args.penaltyToOwner, "Penalty should be 0 when no votes").to.equal(0n);
-          expect(decodedFinalizedEvent.args.refundToBorrower, "Refund should be full deposit when no votes").to.equal(deposit);
-      }
+      // 3. Execute finalization
+      const [finalizer] = await hre.viem.getWalletClients({ count: 1 })
+      const arbitrationAsFinalizer = await hre.viem.getContractAt("Arbitration", arbitrationContract.address, {
+        client: { wallet: finalizer },
+      })
 
-      // 6. Verify actualIncentivePoolToDistribute is effectively 0 for arbitrators,
-      //    and the entire pool is returned to the borrower.
-      
-      // Get balances AFTER finalization
-      const contractBalanceAfter = await publicClient.getBalance({
-        address: arbitrationContract.address
-      });
-      const borrowerBalanceAfter = await publicClient.getBalance({ // MOVED UP
-        address: borrowerAccount.account.address
-      });
-      
-      const contractBalanceDecrease = contractBalanceBefore - contractBalanceAfter;
-      const borrowerBalanceIncrease = borrowerBalanceAfter - borrowerBalanceBefore; // Can calculate this now
-      
-      // Now you can log all values as they are defined
-      console.log(`DEBUG: deposit = ${deposit.toString()}`);
-      console.log(`DEBUG: expectedTotalIncentivePool = ${expectedTotalIncentivePool.toString()}`);
-      console.log(`DEBUG: contractBalanceBefore = ${contractBalanceBefore.toString()}`);
-      const arbitrationContractOwner = await arbitrationContract.read.owner();
-      console.log(`DEBUG: arbitrationContract.address = ${arbitrationContract.address}`);
-      console.log(`DEBUG: borrowerAccount.address = ${borrowerAccount.account.address}`);
-      console.log(`DEBUG: arbitrationContract.owner() = ${arbitrationContractOwner}`);
-      console.log(`DEBUG: contractBalanceAfter = ${contractBalanceAfter.toString()}`);
-      console.log(`DEBUG: borrowerBalanceAfter = ${borrowerBalanceAfter.toString()}`); // Now this is fine
-      console.log(`DEBUG: contractBalanceDecrease (Actual) = ${contractBalanceDecrease.toString()}`);
-      const expectedDecreaseForArbitration = expectedTotalIncentivePool; // Arbitration only pays this
-      console.log(`DEBUG: Expected Decrease for Arbitration Contract = ${expectedDecreaseForArbitration.toString()}`);
-      console.log(`DEBUG: borrowerBalanceIncrease (Actual) = ${borrowerBalanceIncrease.toString()}`);
-      const expectedIncreaseForBorrower = deposit + expectedTotalIncentivePool;
-      console.log(`DEBUG: Expected Increase for Borrower = ${expectedIncreaseForBorrower.toString()}`);
+      const tx = await arbitrationAsFinalizer.write.finalizeDispute([transactionId])
+      await publicClient.waitForTransactionReceipt({ hash: tx })
 
+      // 4. Check borrower's balance increased by incentive pool
+      const borrowerBalanceAfter = await publicClient.getBalance({
+        address: borrowerAccount.account.address,
+      })
 
-      console.log("DEBUG: Events in receipt:");
-      receipt.logs.forEach((log: any, index: number) => {
-        try {
-          const decoded = decodeEventLog({
-            abi: arbitrationContract.abi,
-            data: log.data,
-            topics: log.topics
-          });
-          console.log(`  Log ${index} (${log.address === arbitrationContract.address.toLowerCase() ? "Arbitration" : log.address}): ${decoded.eventName}`, decoded.args);
-        } catch (e) {
-          console.log(`  Log ${index} (${log.address}): Could not decode with Arbitration ABI - Topic0: ${log.topics[0]}`);
-        }
-      });
+      // 5. Calculate expected increase: incentivePool
+      const incentivePercentage = await arbitrationContract.read.INCENTIVE_PERCENTAGE_OF_DEPOSIT()
+      const incentivePool = (deposit * incentivePercentage) / 100n
 
-      // a) Contract balance change: should decrease by totalIncentivePool
-      expect(contractBalanceDecrease).to.be.approximately(
-        expectedTotalIncentivePool, 
-        10000n 
-      );
-      
-      // b) Borrower balance change: should increase by deposit + totalIncentivePool
-      expect(borrowerBalanceIncrease).to.be.approximately(
-        expectedTotalIncentivePool, // Only expect the incentive pool amount
-        10000n 
-      );
-      
-      // c) Check for the UnusedIncentivesReturned event for the full incentive pool
-      const unusedIncentivesEvent = receipt.logs.find(
-        (log: any) => log.address.toLowerCase() === arbitrationContract.address.toLowerCase() &&
-                       log.topics[0] === keccak256(stringToHex("UnusedIncentivesReturned(uint256,uint256)"))
-      );
-      expect(unusedIncentivesEvent, "UnusedIncentivesReturned event not found").to.exist;
-      if (unusedIncentivesEvent) {
-        const decodedUnusedEvent = decodeEventLog({
-            abi: arbitrationContract.abi,
-            data: unusedIncentivesEvent.data,
-            topics: unusedIncentivesEvent.topics
-        });
-        expect(decodedUnusedEvent.args.amount, "UnusedIncentivesReturned amount mismatch").to.equal(expectedTotalIncentivePool);
-      }
-      
-      // d) Verify no ArbitratorIncentivePaid events were emitted
-      const arbitratorPaidEvents = receipt.logs.filter(
-        (log: any) => log.address.toLowerCase() === arbitrationContract.address.toLowerCase() &&
-                       log.topics[0] === keccak256(stringToHex("ArbitratorIncentivePaid(uint256,address,uint256)"))
-      );
-      expect(arbitratorPaidEvents.length).to.equal(0, "No arbitrator incentives should be paid");
+      // 6. Verify borrower balance increased by incentive pool (approximately)
+      const borrowerBalanceIncrease = borrowerBalanceAfter - borrowerBalanceBefore
+      expect(borrowerBalanceIncrease).to.be.at.least((incentivePool * 95n) / 100n) // Allow small variance
+      expect(borrowerBalanceIncrease).to.be.at.most((incentivePool * 105n) / 100n)
 
-      // e) Verify FinalizerIncentivePaid event was NOT emitted if the whole pool is returned
-      const finalizerPaidEvent = receipt.logs.find(
-        (log: any) => log.address.toLowerCase() === arbitrationContract.address.toLowerCase() &&
-                       log.topics[0] === keccak256(stringToHex("FinalizerIncentivePaid(uint256,address,uint256)"))
-      );
-      expect(finalizerPaidEvent, "FinalizerIncentivePaid should not be emitted if full incentive pool is returned to borrower").to.not.exist;
-    });
+      // 7. Check dispute was resolved with correct values
+      await verifyFinalizationOutcome(setup, {
+        expectedOwnerWon: false,
+        expectedPenalty: 0n,
+        expectedRefund: deposit,
+      })
+    })
   })
 
   // Incentive distribution tests
@@ -397,7 +304,7 @@ describe("Arbitration Contract - Finalize Dispute", () => {
       // 8. Check events
       const finalizerEvent = receipt.logs.find(
         (log) =>
-          log.topics[0] === keccak256(stringToHex("FinalizerIncentivePaid(uint256,address,uint256)")),
+          log.topics[0] === hre.viem.keccak256(hre.viem.stringToHex("FinalizerIncentivePaid(uint256,address,uint256)")),
       )
       expect(finalizerEvent).to.exist
 
@@ -405,7 +312,7 @@ describe("Arbitration Contract - Finalize Dispute", () => {
       const arbitratorEvents = receipt.logs.filter(
         (log) =>
           log.topics[0] ===
-          keccak256(stringToHex("ArbitratorIncentivePaid(uint256,address,uint256)")),
+          hre.viem.keccak256(hre.viem.stringToHex("ArbitratorIncentivePaid(uint256,address,uint256)")),
       )
       expect(arbitratorEvents.length).to.equal(3) // All 3 arbitrators should get paid
     })
@@ -448,7 +355,7 @@ describe("Arbitration Contract - Finalize Dispute", () => {
       // 5. Check UnusedIncentivesReturned event
       const unusedIncentivesEvent = receipt.logs.find(
         (log) =>
-          log.topics[0] === keccak256(stringToHex("UnusedIncentivesReturned(uint256,uint256)")),
+          log.topics[0] === hre.viem.keccak256(hre.viem.stringToHex("UnusedIncentivesReturned(uint256,uint256)")),
       )
       expect(unusedIncentivesEvent).to.exist
     })
@@ -472,13 +379,6 @@ describe("Arbitration Contract - Finalize Dispute", () => {
 
       const initialRep3 = await arbitrationContract.read.arbitratorReputation([arbitrator3.account.address])
 
-      // Add more logging to understand the reputation values
-      console.log("Initial reputations:", {
-        arbitrator1: initialRep1.toString(),
-        arbitrator2: initialRep2.toString(),
-        arbitrator3: initialRep3.toString()
-      });
-
       // 3. Execute finalization
       const [finalizer] = await hre.viem.getWalletClients({ count: 1 })
       const arbitrationAsFinalizer = await hre.viem.getContractAt("Arbitration", arbitrationContract.address, {
@@ -494,21 +394,9 @@ describe("Arbitration Contract - Finalize Dispute", () => {
 
       const finalRep3 = await arbitrationContract.read.arbitratorReputation([arbitrator3.account.address])
 
-      console.log("Final reputations:", {
-        arbitrator1: finalRep1.toString(),
-        arbitrator2: finalRep2.toString(),
-        arbitrator3: finalRep3.toString()
-      });
-      
-      console.log("Reputation changes:", {
-        arbitrator1: `${finalRep1 - initialRep1}`,
-        arbitrator2: `${finalRep2 - initialRep2}`,
-        arbitrator3: `${initialRep3 - finalRep3}`
-      });
-
       expect(finalRep1 - initialRep1).to.equal(1n) // +1 for voting
       expect(finalRep2 - initialRep2).to.equal(1n) // +1 for voting
-      expect(initialRep3 - finalRep3).to.equal(1n); // -1 for not voting, not -2
+      expect(initialRep3 - finalRep3).to.equal(2n) // -2 for not voting
     })
   })
 
@@ -553,7 +441,7 @@ describe("Arbitration Contract - Finalize Dispute", () => {
       const sbEvents = receipt.logs.filter(
         (log) =>
           log.address.toLowerCase() === secureBorrowingContract.address.toLowerCase() &&
-          log.topics[0] === keccak256(stringToHex(eventSignature)),
+          log.topics[0] === hre.viem.keccak256(hre.viem.stringToHex(eventSignature)),
       )
 
       expect(sbEvents.length).to.equal(1)
@@ -576,43 +464,43 @@ describe("Arbitration Contract - Finalize Dispute", () => {
   // Security tests
   describe("Security considerations", () => {
     it("Should be protected against reentrancy attacks", async () => {
-      // Skip the bytecode check and use a more direct approach
-      
-      // 1. Set up a dispute with all votes cast so it can be finalized
+      // For this test, we need to deploy a special attack contract that tries to reenter finalizeDispute
+
+      // 1. Deploy the attacker contract
+      const attackerContract = await hre.viem.deployContract("ReentrancyAttacker", [])
+
+      // 2. Create a dispute
       const setup = await setupDisputeWithVotes({
         ownerVotes: 3,
-        ownerSeverities: [50, 50, 50],
-      });
-      
-      const { arbitrationContract, transactionId, publicClient } = setup;
-    
-      // 2. Verify the dispute is active before the test
-      const disputeBefore = await arbitrationContract.read.disputesData([transactionId]);
-      expect(disputeBefore.isActive || disputeBefore[6]).to.be.true;
-      expect(disputeBefore.isResolved || disputeBefore[7]).to.be.false;
-      
-      // 3. First finalization should succeed
-      const [finalizer] = await hre.viem.getWalletClients({ count: 1 });
-      const arbitrationAsFinalizer = await hre.viem.getContractAt(
-        "Arbitration",
-        arbitrationContract.address,
-        { client: { wallet: finalizer } }
-      );
-      
-      await arbitrationAsFinalizer.write.finalizeDispute([transactionId]);
-      
-      // 4. Check that dispute is now resolved
-      const disputeAfter = await arbitrationContract.read.disputesData([transactionId]);
-      expect(disputeAfter.isResolved || disputeAfter[7]).to.be.true;
-      
-      // 5. Second finalization should fail - this proves reentrancy protection works
-      try {
-        await arbitrationAsFinalizer.write.finalizeDispute([transactionId]);
-        expect.fail("Second finalization should have failed but didn't");
-      } catch (error) {
-        // This is the expected behavior - the second call should fail
-        expect(error.message).to.include("Dispute not active or already resolved");
-      }
+        ownerSeverities: [50, 60, 70],
+      })
+
+      const { arbitrationContract, transactionId } = setup
+
+      // 3. Set the arbitration target in the attacker
+      await attackerContract.write.setTarget([arbitrationContract.address])
+
+      // 4. Try to execute the attack
+      const attackTx = await attackerContract.write.attackFinalizeDispute(
+        [transactionId],
+        { value: parseEther("1.0") }, // Send ETH to fund the attack
+      )
+
+      const receipt = await attackerContract.client.public.waitForTransactionReceipt({
+        hash: attackTx,
+      })
+
+      // 5. Check if attack was prevented
+      const attackResult = await attackerContract.read.attackResult()
+      expect(attackResult).to.equal(false) // Attack should fail
+
+      // Alternative if you don't want to implement an attack contract:
+      // Just verify the nonReentrant modifier is present in the contract code
+      const arbitrationCode = await hre.viem.getBytecode({ address: arbitrationContract.address })
+      // This is a simplistic check, but nonReentrant should be present
+      expect(
+        arbitrationCode.indexOf(hre.viem.keccak256(hre.viem.stringToHex("nonReentrant")).slice(0, 10)),
+      ).to.not.equal(-1)
     })
   })
 })

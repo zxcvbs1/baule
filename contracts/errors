@@ -1,73 +1,26 @@
 
 
-  Arbitration Contract - Finalize Dispute
-    Validation checks
-      ✔ Should reject if dispute is not active or already resolved (617ms)
-      ✔ Should reject if voting period has not ended and not all arbitrators voted
-    Dispute outcome scenarios
-      ✔ Should resolve correctly when owner wins (majority votes)
-      ✔ Should resolve correctly when borrower wins (majority votes)
-      ✔ Should handle tie votes correctly with 50/50 split
-DEBUG: deposit = 1000000000000000000
-DEBUG: expectedTotalIncentivePool = 100000000000000000
-DEBUG: contractBalanceBefore = 100000000000000000
-DEBUG: arbitrationContract.address = 0xe7f1725e7734ce288f8367e1bb143e90bb3f0512
-DEBUG: borrowerAccount.address = 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc
-DEBUG: arbitrationContract.owner() = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
-DEBUG: contractBalanceAfter = 0
-DEBUG: borrowerBalanceAfter = 9998999669942251659120
-DEBUG: contractBalanceDecrease (Actual) = 100000000000000000
-DEBUG: Expected Decrease for Arbitration Contract = 100000000000000000
-DEBUG: borrowerBalanceIncrease (Actual) = 100000000000000000
-DEBUG: Expected Increase for Borrower = 1100000000000000000
-DEBUG: Events in receipt:
-  Log 0 (Arbitration): UnusedIncentivesReturned { originalTransactionId: 0n, amount: 100000000000000000n }
-  Log 1 (Arbitration): ReputationUpdated {
-  arbitrator: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-  reputationChange: -1n,
-  newReputation: -1n
-}
-  Log 2 (Arbitration): ReputationUpdated {
-  arbitrator: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
-  reputationChange: -1n,
-  newReputation: -1n
-}
-  Log 3 (Arbitration): ReputationUpdated {
-  arbitrator: '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc',
-  reputationChange: -1n,
-  newReputation: -1n
-}
-  Log 4 (0x5fc8d32690cc91d4c39d9d3abcbd16989f875707): Could not decode with Arbitration ABI - Topic0: 0xc8d22e05102e36fc8ebbcfe82af6b1db1cc3a991050ebee751e96cd96d72e954
-  Log 5 (Arbitration): DisputeFinalizedInArbitration {
-  originalTransactionId: 0n,
-  ownerWon: false,
-  penaltyToOwner: 0n,
-  refundToBorrower: 1000000000000000000n,
-  finalizer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-}
-      1) Should handle case where no arbitrators voted
-    Incentive distribution
-      ✔ Should distribute incentives correctly to finalizer and voting arbitrators
-      ✔ Should handle case when no arbitrators voted (incentive return)
-    Reputation updates
-Initial reputations: { arbitrator1: '0', arbitrator2: '0', arbitrator3: '0' }
-Final reputations: { arbitrator1: '1', arbitrator2: '1', arbitrator3: '-1' }
-Reputation changes: { arbitrator1: '1', arbitrator2: '1', arbitrator3: '1' }
-      ✔ Should update arbitrator reputation correctly (+1 for voters, -2 for non-voters)
-    Integration with SecureBorrowing
-      ✔ Should call processArbitrationOutcome with correct parameters
-    Security considerations
-      ✔ Should be protected against reentrancy attacks
+  Arbitration Contract - Admin Functions
+    updateVotingPeriod
+      ✔ Should reject if caller is not the owner (1180ms)
+      ✔ Should reject if new period is below MIN_VOTING_PERIOD
+      ✔ Should reject if new period is above MAX_VOTING_PERIOD
+      ✔ Should successfully update voting period within allowed range
+    setArbitratorsPanel
+      ✔ Should reject if caller is not the owner
+      ✔ Should reject if any arbitrator address is zero
+      ✔ Should successfully update arbitrators panel
+      ✔ Should not affect existing disputes when panel is updated
+    withdrawStuckETH
+      ✔ Should reject if caller is not the owner
+      ✔ Should reject if recipient is zero address
+      ✔ Should reject if amount exceeds contract balance
+      ✔ Should successfully withdraw ETH
+    updateSecureBorrowing
+      ✔ Should reject if caller is not the owner
+      ✔ Should reject if new address is zero
+      ✔ Should successfully update SecureBorrowing address
 
 
-  10 passing (891ms)
-  1 failing
-
-  1) Arbitration Contract - Finalize Dispute
-       Dispute outcome scenarios
-         Should handle case where no arbitrators voted:
-     AssertionError: expected 100000000000000000 to be close to 1100000000000000000 +/- 10000
-      at Context.<anonymous> (test/ArbitrationFinalization.t.ts:285:45)
-
-
+  15 passing (1s)
 
