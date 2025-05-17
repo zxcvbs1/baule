@@ -14,9 +14,9 @@ interface IArbitration {
         address itemOwner,
         address borrower,
         uint256 depositAtStake
-    ) external payable returns (bool);
+    ) external payable returns (bool); // MODIFICADO: añadido payable
 
-    function INCENTIVE_PERCENTAGE_OF_DEPOSIT() external view returns (uint256);
+    function INCENTIVE_PERCENTAGE_OF_DEPOSIT() external view returns (uint256); // AÑADIDO: para obtener el porcentaje
 }
 
 contract SecureBorrowing is ReentrancyGuard, Ownable, Pausable {
@@ -376,54 +376,56 @@ contract SecureBorrowing is ReentrancyGuard, Ownable, Pausable {
     function processArbitrationOutcome(
         uint256 transactionId,
         bool ownerWonDispute,
-        uint8 penaltyPercentToOwner,
+        uint256 penaltyAmountToOwnerFromArbitration,
+        uint256 refundAmountToBorrowerFromArbitration,
         address itemOwnerFromArbitration,
         address borrowerFromArbitration
     ) external virtual whenNotPaused nonReentrant {
         require(msg.sender == address(arbitrationContract), "Ledger: Caller is not the Arbitration contract");
 
         Transaction storage txn = transactions[transactionId];
-        ItemInfo storage item = items[txn.itemId];
+        ItemInfo storage item = items[txn.itemId]; // item.owner puede ser address(0) si fue borrado mientras estaba en disputa
 
         require(txn.isConcluded && txn.damageReported, "Ledger: No active dispute to process for this transaction");
+        // MODIFICADO: Usar itemOwnerFromArbitration para la lógica, ya que item.owner podría haber cambiado o ser 0
         require(itemOwnerFromArbitration != address(0), "Ledger: Invalid item owner from arbitration");
         require(txn.borrower == borrowerFromArbitration, "Ledger: Borrower mismatch");
         
-        // Calculate actual amounts based on the percentage and the deposit held
-        uint256 penaltyAmountToOwner = (txn.depositPaid * penaltyPercentToOwner) / 100;
-        uint256 refundAmountToBorrower = txn.depositPaid - penaltyAmountToOwner;
+        uint256 totalArbitrationPayout = penaltyAmountToOwnerFromArbitration + refundAmountToBorrowerFromArbitration;
+        require(totalArbitrationPayout <= txn.depositPaid, "Invalid arbitration amounts");
 
-        // Use the item variable here instead of accessing items[txn.itemId] again
-        if (item.owner != address(0)) {
-            item.isAvailable = true;
+        // Si el item fue borrado mientras estaba en disputa, item.owner será address(0).
+        // No podemos marcar item.isAvailable = true si el item ya no existe en nuestro mapping.
+        if (items[txn.itemId].owner != address(0)) {
+            items[txn.itemId].isAvailable = true;
         }
         activeDisputeCount--;
 
-        txn.amountFromDepositPaidToOwner = penaltyAmountToOwner;
-        txn.amountFromDepositRefundedToBorrower = refundAmountToBorrower;
+        txn.amountFromDepositPaidToOwner = penaltyAmountToOwnerFromArbitration;
+        txn.amountFromDepositRefundedToBorrower = refundAmountToBorrowerFromArbitration;
 
         if (ownerWonDispute) {
-            // Use _calculateReputationChange with the calculated amount
-            updateReputation(txn.borrower, -_calculateReputationChange(penaltyAmountToOwner), false);
-            updateReputation(itemOwnerFromArbitration, 1, true);
+            // MODIFICADO: Usar _calculateReputationChange
+            updateReputation(txn.borrower, -_calculateReputationChange(penaltyAmountToOwnerFromArbitration), false);
+            updateReputation(itemOwnerFromArbitration, 1, true); // Propietario original gana +1
         } else {
-            updateReputation(itemOwnerFromArbitration, -_calculateReputationChange(refundAmountToBorrower), true);
+            updateReputation(itemOwnerFromArbitration, -_calculateReputationChange(refundAmountToBorrowerFromArbitration), true);
             updateReputation(txn.borrower, 1, false);
         }
 
         emit ArbitrationOutcomeProcessed(
             transactionId,
             ownerWonDispute,
-            penaltyAmountToOwner,
-            refundAmountToBorrower
+            penaltyAmountToOwnerFromArbitration,
+            refundAmountToBorrowerFromArbitration
         );
 
-        if (penaltyAmountToOwner > 0) {
-            (bool successP, ) = payable(itemOwnerFromArbitration).call{value: penaltyAmountToOwner}("");
+        if (penaltyAmountToOwnerFromArbitration > 0) {
+            (bool successP, ) = payable(itemOwnerFromArbitration).call{value: penaltyAmountToOwnerFromArbitration}("");
             require(successP, "Ledger: Penalty transfer to owner failed");
         }
-        if (refundAmountToBorrower > 0) {
-            (bool successR, ) = payable(txn.borrower).call{value: refundAmountToBorrower}("");
+        if (refundAmountToBorrowerFromArbitration > 0) {
+            (bool successR, ) = payable(txn.borrower).call{value: refundAmountToBorrowerFromArbitration}("");
             require(successR, "Ledger: Refund transfer to borrower failed");
         }
     }

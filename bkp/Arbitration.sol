@@ -6,11 +6,12 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol"; // Usar ReentrancyGuard de OZ
 
 // Interfaz para comunicarse con SecureBorrowing
-interface ISecureBorrowing {
+interface ISecureBorrowing { // MODIFIED: Renamed from ISecureBorrowingLedger
     function processArbitrationOutcome(
         uint256 transactionId,
         bool ownerWonDispute,
-        uint8 penaltyPercentToOwner, // Changed from uint256 to uint8 for percentage
+        uint256 penaltyAmountToOwner,
+        uint256 refundAmountToBorrower,
         address itemOwner,
         address borrower
     ) external;
@@ -178,8 +179,9 @@ contract Arbitration is Ownable, Pausable, ReentrancyGuard { // Heredar de OZ
         require(dispute.isActive && !dispute.isResolved, "Dispute not active or already resolved");
         require(block.timestamp >= dispute.creationTime + disputeVotingPeriod || dispute.votesCasted == dispute.disputeArbitrators.length, "Voting period not over unless all voted");
 
+        uint256 refundToBorrower = 0;
+        uint256 penaltyToOwner = 0;
         bool ownerWonDisputeDecision = false;
-        uint8 penaltyPercentToOwner = 0; // Changed to store percentage instead of amount
 
         uint256 votesForOwner = 0;
         uint256 votesForBorrower = 0;
@@ -191,31 +193,36 @@ contract Arbitration is Ownable, Pausable, ReentrancyGuard { // Heredar de OZ
                 if (dispute.arbitratorVoteInFavorOfOwner[arbitrator]) {
                     votesForOwner++;
                     totalSeverityOwner += dispute.arbitratorDamageSeverity[arbitrator];
-                } else {
+                } else { // Votó por el prestatario
                     votesForBorrower++;
                 }
             }
         }
         
         uint256 actualIncentivePoolToDistribute = dispute.incentivePoolPaidIn;
+        uint256 remainingWeiFromDivision = 0;
 
-        if (votesForOwner + votesForBorrower > 0) {
+        if (votesForOwner + votesForBorrower > 0) { // Si hubo al menos un voto
             if (votesForOwner > votesForBorrower) {
                 ownerWonDisputeDecision = true;
-                // Calculate average severity as the percentage to send
-                penaltyPercentToOwner = uint8(totalSeverityOwner / votesForOwner);
+                uint256 averageSeverityOwner = totalSeverityOwner / votesForOwner; 
+                penaltyToOwner = (dispute.depositAtStake * averageSeverityOwner) / 100;
+                refundToBorrower = dispute.depositAtStake - penaltyToOwner;
             } else if (votesForBorrower > votesForOwner) {
                 ownerWonDisputeDecision = false;
-                penaltyPercentToOwner = 0;
-            } else { // Tie
+                penaltyToOwner = 0;
+                refundToBorrower = dispute.depositAtStake;
+            } else { // Empate
                 ownerWonDisputeDecision = false;
-                penaltyPercentToOwner = 50; // 50% split in case of tie
+                penaltyToOwner = dispute.depositAtStake / 2;
+                refundToBorrower = dispute.depositAtStake - penaltyToOwner;
+                remainingWeiFromDivision = dispute.depositAtStake % 2;
+                refundToBorrower += remainingWeiFromDivision;
             }
-        } else { // No votes
+        } else { // No hubo votos
             ownerWonDisputeDecision = false;
-            penaltyPercentToOwner = 0;
-            
-            // Return incentives if no votes - existing code stays the same
+            penaltyToOwner = 0;
+            refundToBorrower = dispute.depositAtStake;
             if (dispute.incentivePoolPaidIn > 0 && address(this).balance >= dispute.incentivePoolPaidIn) {
                 (bool successReturnToBorrower, ) = payable(dispute.borrower).call{value: dispute.incentivePoolPaidIn}("");
                 if (successReturnToBorrower) {
@@ -311,20 +318,16 @@ contract Arbitration is Ownable, Pausable, ReentrancyGuard { // Heredar de OZ
         dispute.isResolved = true;
         dispute.isActive = false;
 
-        // Call SecureBorrowing with percentage instead of absolute amounts
-        secureBorrowingContract.processArbitrationOutcome(
+        secureBorrowingContract.processArbitrationOutcome( // MODIFIED: Variable name
             originalTransactionId,
             ownerWonDisputeDecision,
-            penaltyPercentToOwner, // Send percentage instead of amount
+            penaltyToOwner,
+            refundToBorrower,
             dispute.itemOwner,
             dispute.borrower
         );
 
-        // Calculate estimated amounts for the event only (for logging purposes)
-        uint256 estimatedPenaltyToOwner = (dispute.depositAtStake * penaltyPercentToOwner) / 100;
-        uint256 estimatedRefundToBorrower = dispute.depositAtStake - estimatedPenaltyToOwner;
-        
-        emit DisputeFinalizedInArbitration(originalTransactionId, ownerWonDisputeDecision, estimatedPenaltyToOwner, estimatedRefundToBorrower, msg.sender);
+        emit DisputeFinalizedInArbitration(originalTransactionId, ownerWonDisputeDecision, penaltyToOwner, refundToBorrower, msg.sender);
     }
 
     function updateVotingPeriod(uint256 _newPeriod) external onlyOwner {

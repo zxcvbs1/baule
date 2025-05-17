@@ -5,6 +5,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox-viem/network-helpe
 
 export async function deployTestContractsFixture() {
   const publicClient = await hre.viem.getPublicClient()
+  const testClient = await hre.viem.getTestClient() // <<< AÑADIR ESTO
   const [
     ownerLedger, // Dueño de SecureBorrowing
     ownerArbitration, // Dueño de Arbitration
@@ -60,6 +61,7 @@ export async function deployTestContractsFixture() {
     secureBorrowingContract,
     arbitrationContract,
     publicClient,
+    testClient, // <<< RETORNAR ESTO
     getSecureBorrowingAs,
     getArbitrationContractAs,
     // Renombra 'owner' y 'otraCuenta' si es necesario para consistencia
@@ -358,6 +360,7 @@ export async function setupActiveDispute() {
     ownerLedger,
     borrowerAccount,
     publicClient,
+    testClient,
     arbitrator1,
     arbitrator2,
     arbitrator3,
@@ -387,6 +390,7 @@ export async function setupActiveDispute() {
     ownerArbitration, // Make sure this is included in the return
     borrowerAccount,
     publicClient,
+    testClient,
     arbitrator1,
     arbitrator2,
     arbitrator3,

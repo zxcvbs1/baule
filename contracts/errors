@@ -1,161 +1,44 @@
 
 
-  Transaction
-    processArbitrationOutcome
-      Successful Processing Scenarios (Escenario B - Incentive Pool deducido del depósito)
-Fixture Results in setupDisputedTransactionContext: {
-  secureBorrowingContractAddress: '0x5fbdb2315678afecb367f032d93f642f64180aa3',
-  arbitrationContractAddress: '0xe7f1725e7734ce288f8367e1bb143e90bb3f0512',
-  ownerLedgerAddress: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
-  borrowerAccountAddress: '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc',
-  arbitrator1Address: '0x90f79bf6eb2c4f870365e785982e1f101e93b906',
-  arbitrator2Address: '0x15d34aaf54267db7d7c367839aaf71a00a2c6a65',
-  arbitrator3Address: '0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc'
-}
-Values returned by setupDisputedTransactionContext: {
-  secureBorrowingContractAddress: '0x5fbdb2315678afecb367f032d93f642f64180aa3',
-  arbitrationContractAddress: '0xe7f1725e7734ce288f8367e1bb143e90bb3f0512',
-  ownerLedgerAddress: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
-  borrowerAccountAddress: '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc',
-  arbitrator1Address: '0x90f79bf6eb2c4f870365e785982e1f101e93b906',
-  arbitrator2Address: '0x15d34aaf54267db7d7c367839aaf71a00a2c6a65',
-  arbitrator3Address: '0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc',
-  deposit: '1000000000000000000',
-  transactionId: '0',
-  itemId: '0x746573742d6974656d0000000000000000000000000000000000000000000000'
-}
-        1) Escenario B: Dueño gana con 100% severidad, recibe depósito neto
-Fixture Results in setupDisputedTransactionContext: {
-  secureBorrowingContractAddress: '0x5fbdb2315678afecb367f032d93f642f64180aa3',
-  arbitrationContractAddress: '0xe7f1725e7734ce288f8367e1bb143e90bb3f0512',
-  ownerLedgerAddress: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
-  borrowerAccountAddress: '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc',
-  arbitrator1Address: '0x90f79bf6eb2c4f870365e785982e1f101e93b906',
-  arbitrator2Address: '0x15d34aaf54267db7d7c367839aaf71a00a2c6a65',
-  arbitrator3Address: '0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc'
-}
-Values returned by setupDisputedTransactionContext: {
-  secureBorrowingContractAddress: '0x5fbdb2315678afecb367f032d93f642f64180aa3',
-  arbitrationContractAddress: '0xe7f1725e7734ce288f8367e1bb143e90bb3f0512',
-  ownerLedgerAddress: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
-  borrowerAccountAddress: '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc',
-  arbitrator1Address: '0x90f79bf6eb2c4f870365e785982e1f101e93b906',
-  arbitrator2Address: '0x15d34aaf54267db7d7c367839aaf71a00a2c6a65',
-  arbitrator3Address: '0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc',
-  deposit: '1000000000000000000',
-  transactionId: '0',
-  itemId: '0x746573742d6974656d0000000000000000000000000000000000000000000000'
-}
-        2) Escenario B: Dueño gana con 60% severidad, pagos basados en depósito neto
-Fixture Results in setupDisputedTransactionContext: {
-  secureBorrowingContractAddress: '0x5fbdb2315678afecb367f032d93f642f64180aa3',
-  arbitrationContractAddress: '0xe7f1725e7734ce288f8367e1bb143e90bb3f0512',
-  ownerLedgerAddress: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
-  borrowerAccountAddress: '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc',
-  arbitrator1Address: '0x90f79bf6eb2c4f870365e785982e1f101e93b906',
-  arbitrator2Address: '0x15d34aaf54267db7d7c367839aaf71a00a2c6a65',
-  arbitrator3Address: '0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc'
-}
-Values returned by setupDisputedTransactionContext: {
-  secureBorrowingContractAddress: '0x5fbdb2315678afecb367f032d93f642f64180aa3',
-  arbitrationContractAddress: '0xe7f1725e7734ce288f8367e1bb143e90bb3f0512',
-  ownerLedgerAddress: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
-  borrowerAccountAddress: '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc',
-  arbitrator1Address: '0x90f79bf6eb2c4f870365e785982e1f101e93b906',
-  arbitrator2Address: '0x15d34aaf54267db7d7c367839aaf71a00a2c6a65',
-  arbitrator3Address: '0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc',
-  deposit: '1000000000000000000',
-  transactionId: '0',
-  itemId: '0x746573742d6974656d0000000000000000000000000000000000000000000000'
-}
-        3) Escenario B: Dueño gana con 100% severidad, (ESPERANDO FALLO DE TRANSFERENCIA)
+  SecureBorrowing and Arbitration Integration Tests
+    Test Case 1: Dueño gana con 100% severidad
+Test 1 - itemDeposit: 1000000000000000000
+Test 1 - expectedBorrowerRepChange: 10000000000000000
+Test 1 - actual borrowerRep: -10000
+      1) should correctly process dispute where owner wins with 100% severity
+    Test Case 2: Dueño gana con 60% severidad
+Test 2 - ownerShareOfDeposit: 600000000000000000
+Test 2 - expectedBorrowerRepChange: 6000000000000000
+Test 2 - actual borrowerRep: -10000
+      2) should correctly process dispute where owner wins with 60% average severity
 
 
   0 passing (1s)
-  3 failing
+  2 failing
 
-  1) Transaction
-       processArbitrationOutcome
-         Successful Processing Scenarios (Escenario B - Incentive Pool deducido del depósito)
-           Escenario B: Dueño gana con 100% severidad, recibe depósito neto:
-     AbiFunctionNotFoundError: Function "getTransactionInfo" not found on ABI.
-Make sure you are using the correct ABI and that the function exists on it.
+  1) SecureBorrowing and Arbitration Integration Tests
+       Test Case 1: Dueño gana con 100% severidad
+         should correctly process dispute where owner wins with 100% severity:
 
-Docs: https://viem.sh/docs/contract/encodeFunctionData
-Version: viem@2.29.0
-      at prepareEncodeFunctionData (node_modules/viem/utils/abi/prepareEncodeFunctionData.ts:101:22)
-      at /workspaces/baulera/contracts/node_modules/viem/utils/abi/encodeFunctionData.ts:85:37
-      at encodeFunctionData (node_modules/viem/utils/abi/encodeFunctionData.ts:86:5)
-      at readContract (node_modules/viem/actions/public/readContract.ts:114:38)
-      at readContract (node_modules/viem/clients/decorators/public.ts:2005:41)
-      at Proxy.<anonymous> (node_modules/viem/actions/getContract.ts:554:16)
-      at Context.<anonymous> (test/Transaction.t.ts:137:74)
+      Borrower reputation
+      + expected - actual
 
-  2) Transaction
-       processArbitrationOutcome
-         Successful Processing Scenarios (Escenario B - Incentive Pool deducido del depósito)
-           Escenario B: Dueño gana con 60% severidad, pagos basados en depósito neto:
-     AbiFunctionNotFoundError: Function "getItemInfo" not found on ABI.
-Make sure you are using the correct ABI and that the function exists on it.
+      --10000
+      +-10000000000000000
+      
+      at Context.<anonymous> (test/Transaction.t.ts:285:59)
 
-Docs: https://viem.sh/docs/contract/encodeFunctionData
-Version: viem@2.29.0
-      at prepareEncodeFunctionData (node_modules/viem/utils/abi/prepareEncodeFunctionData.ts:101:22)
-      at /workspaces/baulera/contracts/node_modules/viem/utils/abi/encodeFunctionData.ts:85:37
-      at encodeFunctionData (node_modules/viem/utils/abi/encodeFunctionData.ts:86:5)
-      at readContract (node_modules/viem/actions/public/readContract.ts:114:38)
-      at readContract (node_modules/viem/clients/decorators/public.ts:2005:41)
-      at Proxy.<anonymous> (node_modules/viem/actions/getContract.ts:554:16)
-      at Context.<anonymous> (test/Transaction.t.ts:242:61)
+  2) SecureBorrowing and Arbitration Integration Tests
+       Test Case 2: Dueño gana con 60% severidad
+         should correctly process dispute where owner wins with 60% average severity:
 
-  3) Transaction
-       processArbitrationOutcome
-         Successful Processing Scenarios (Escenario B - Incentive Pool deducido del depósito)
-           Escenario B: Dueño gana con 100% severidad, (ESPERANDO FALLO DE TRANSFERENCIA):
-     ContractFunctionExecutionError: An unknown RPC error occurred.
+      Borrower reputation
+      + expected - actual
 
-Request Arguments:
-  from:  0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
-  to:    0xe7f1725e7734ce288f8367e1bb143e90bb3f0512
-  data:  0x56989a830000000000000000000000000000000000000000000000000000000000000000
- 
-Contract Call:
-  address:   0xe7f1725e7734ce288f8367e1bb143e90bb3f0512
-  function:  finalizeDispute(uint256 originalTransactionId)
-  args:                     (0)
-  sender:    0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
-
-Docs: https://viem.sh/docs/contract/writeContract
-Details: VM Exception while processing transaction: reverted with reason string 'Ledger: Penalty transfer to owner failed'
-Version: viem@2.29.0
-      at getContractError (node_modules/viem/utils/errors/getContractError.ts:78:10)
-      at writeContract (node_modules/viem/actions/wallet/writeContract.ts:208:27)
-      at async Context.<anonymous> (test/Transaction.t.ts:328:9)
-     Caused by: TransactionExecutionError: An unknown RPC error occurred.
-  
-  Request Arguments:
-    from:  0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
-    to:    0xe7f1725e7734ce288f8367e1bb143e90bb3f0512
-    data:  0x56989a830000000000000000000000000000000000000000000000000000000000000000
-  
-  Details: VM Exception while processing transaction: reverted with reason string 'Ledger: Penalty transfer to owner failed'
-  Version: viem@2.29.0
-      at getTransactionError (node_modules/viem/utils/errors/getTransactionError.ts:44:10)
-      at sendTransaction (node_modules/viem/actions/wallet/sendTransaction.ts:352:30)
-      at async writeContract (node_modules/viem/actions/wallet/writeContract.ts:197:12)
-      at async Context.<anonymous> (test/Transaction.t.ts:328:9)
-     Caused by: UnknownRpcError: An unknown RPC error occurred.
-  
-  Details: VM Exception while processing transaction: reverted with reason string 'Ledger: Penalty transfer to owner failed'
-  Version: viem@2.29.0
-      at delay.count.count (node_modules/viem/utils/buildRequest.ts:243:25)
-      at async attemptRetry (node_modules/viem/utils/promise/withRetry.ts:44:22)
-     Caused by: Error: VM Exception while processing transaction: reverted with reason string 'Ledger: Penalty transfer to owner failed'
-      at SecureBorrowing.processArbitrationOutcome (contracts/SecureBorrowing.sol:376)
-      at Arbitration.finalizeDispute (contracts/Arbitration.sol:321)
-      at EdrProviderWrapper.request (node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:359:41)
-      at async delay.count.count (node_modules/viem/utils/buildRequest.ts:150:22)
-      at async attemptRetry (node_modules/viem/utils/promise/withRetry.ts:44:22)
+      --10000
+      +-6000000000000000
+      
+      at Context.<anonymous> (test/Transaction.t.ts:393:59)
 
 
 
