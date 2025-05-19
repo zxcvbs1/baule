@@ -1,0 +1,115 @@
+// scripts/delete-all-items.ts
+const { PrismaClient } = require('@prisma/client');
+
+// Definir tipos para el Item basado en el schema de Prisma
+interface Item {
+  id: string;
+  name: string;
+  description: string | null;
+  photoUrl: string | null;
+  ownerAddress: string;
+  borrowerAddress: string | null;
+  status: string;
+  borrowingFee: string | null;
+  depositAmount: string | null;
+  contractItemId: string | null;
+  transactionId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Procesar argumentos de la línea de comandos
+const args = process.argv.slice(2);
+
+async function main() {
+  console.log('==============================================');
+  console.log('     ELIMINAR TODOS LOS ITEMS DE LA BD      ');
+  console.log('==============================================\n');
+  
+  const prisma = new PrismaClient();
+  
+  try {
+    // Verificar si se proporcionó una dirección de administrador
+    const adminAddressArg = args.find(arg => arg.startsWith('--admin='))?.split('=')[1];
+    
+    if (!adminAddressArg) {
+      console.log('Error: Debe proporcionar una dirección de administrador para realizar esta operación.');
+      console.log('Ejemplo: npm run db:delete-all -- --admin=0x123... --confirm=BORRAR-TODO');
+      return;
+    }
+    
+    // Aquí deberías verificar que la dirección proporcionada tiene permisos de administrador
+    // Para propósitos de este ejemplo, simplemente verificamos que se proporcionó una dirección
+    console.log(`Administrador: ${adminAddressArg}`);
+    
+    // Primero mostrar cuántos items hay actualmente
+    const itemCount = await prisma.item.count();
+    console.log(`Actualmente hay ${itemCount} items en la base de datos.\n`);
+    
+    if (itemCount === 0) {
+      console.log('No hay items para eliminar. La base de datos ya está vacía.');
+      return;
+    }
+    
+    // Pedir confirmación por consola
+    console.log('⚠️  ADVERTENCIA: Esta operación eliminará TODOS los items de la base de datos.');
+    console.log('⚠️  Esta acción NO SE PUEDE DESHACER.');
+    console.log('⚠️  Los items en blockchain seguirán existiendo en la blockchain pero');
+    console.log('⚠️  se perderá la conexión con ellos en la base de datos local.');
+    
+    // Obtener argumento de línea de comando para confirmación
+    const confirmArg = args.find(arg => arg.startsWith('--confirm='))?.split('=')[1];
+    
+    if (confirmArg !== 'BORRAR-TODO') {
+      console.log('\nNo se proporcionó la confirmación correcta.');
+      console.log('Para confirmar, ejecute: npm run db:delete-all -- --admin=0x123... --confirm=BORRAR-TODO');
+      return;
+    }
+    
+    // Mostrar desglose de los items que se eliminarán
+    const blockchainItems = await prisma.item.count({
+      where: {
+        NOT: { contractItemId: null }
+      }
+    });
+    
+    const localItems = await prisma.item.count({
+      where: {
+        contractItemId: null
+      }
+    });
+    
+    console.log('\nSe eliminarán:');
+    console.log(`- ${localItems} items locales (no en blockchain)`);
+    console.log(`- ${blockchainItems} items vinculados a la blockchain`);
+    console.log('La referencia a estos items se perderá en la base de datos local.\n');
+    
+    // Eliminar todos los items
+    const { count } = await prisma.item.deleteMany({});
+    
+    console.log(`\n✅ Operación completada. Se eliminaron ${count} items de la base de datos.`);
+    
+    // Verificar que no queden items
+    const remainingItems = await prisma.item.count();
+    if (remainingItems === 0) {
+      console.log('✅ La base de datos ahora está vacía.');
+    } else {
+      console.log(`⚠️ Aún quedan ${remainingItems} items en la base de datos.`);
+    }
+    
+  } catch (error) {
+    console.error('❌ Error al eliminar los items:', error);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+main()
+  .then(() => {
+    console.log('\nScript completado.');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('Error en la ejecución del script:', error);
+    process.exit(1);
+  });

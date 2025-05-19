@@ -1,0 +1,332 @@
+
+
+  SecureBorrowing and Arbitration Integration Tests
+    Test Case 1: Dueño gana con 100% severidad
+
+=== INICIANDO TEST: Owner wins with 100% severity ===
+Transaction ID: 0
+Item Deposit: 1000000000000000000 wei (1 ETH)
+Initial Owner Reputation: 0, Initial Borrower Reputation: 0
+
+=== VOTACIÓN DE ÁRBITROS (TxId: 0) ===
+✓ Árbitro 1 (0x90f7...) votó: 100% a favor del dueño
+✓ Árbitro 2 (0x15d3...) votó: 100% a favor del dueño
+✓ Árbitro 3 (0x9965...) votó: 100% a favor del dueño
+
+--- Balances Capturados ---
+Owner Balance: 10000.049313961243835806 ETH
+Borrower Balance: 9998.949669513085073359 ETH
+SecureBorrowing Contract Balance: 1 ETH
+(Item Deposit para referencia: 1 ETH)
+
+=== FINALIZANDO DISPUTA ===
+✓ Disputa finalizada (Tx: 0x41f351470f95f3d4d8781efc565d552529fef16973856327c3c112c02dd8231e)
+Transaction logs for tx: 0x41f351470f95f3d4d8781efc565d552529fef16973856327c3c112c02dd8231e 
+Decoded event: FinalizerIncentivePaid {
+  originalTransactionId: 0n,
+  finalizer: '0x976EA74026E726554dB657fA54763abd0C3a0aa9',
+  amount: 5000000000000000n
+}
+Decoded event: ReputationUpdated {
+  arbitrator: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
+  reputationChange: 1n,
+  newReputation: 1n
+}
+Decoded event: ArbitratorIncentivePaid {
+  originalTransactionId: 0n,
+  arbitrator: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
+  amount: 31666666666666667n
+}
+Decoded event: ReputationUpdated {
+  arbitrator: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
+  reputationChange: 1n,
+  newReputation: 1n
+}
+Decoded event: ArbitratorIncentivePaid {
+  originalTransactionId: 0n,
+  arbitrator: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
+  amount: 31666666666666667n
+}
+Decoded event: ReputationUpdated {
+  arbitrator: '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc',
+  reputationChange: 1n,
+  newReputation: 1n
+}
+Decoded event: ArbitratorIncentivePaid {
+  originalTransactionId: 0n,
+  arbitrator: '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc',
+  amount: 31666666666666666n
+}
+Decoded event: ReputationUpdated {
+  user: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
+  newReputation: -2n,
+  isOwner: false
+}
+Decoded event: ReputationUpdated {
+  user: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  newReputation: 1n,
+  isOwner: true
+}
+Decoded event: ArbitrationOutcomeProcessed {
+  transactionId: 0n,
+  ownerWonDispute: true,
+  penaltyAmountPaidToOwner: 900000000000000000n,
+  refundAmountToBorrower: 0n
+}
+Decoded event: DisputeFinalizedInArbitration {
+  originalTransactionId: 0n,
+  ownerWon: true,
+  penaltyToOwner: 1000000000000000000n,
+  refundToBorrower: 0n,
+  finalizer: '0x976EA74026E726554dB657fA54763abd0C3a0aa9'
+}
+
+=== RESULTADOS REPUTACIÓN ===
+Final Owner Reputation: 1 (Actual Cambio: 1, Esperado: 1)
+Final Borrower Reputation: -2 (Actual Cambio: -2, Esperado: -2)
+Owner Balance: Final 10000.949313961243835806, Initial 10000.049313961243835806, Actual Change 0.9
+Owner Expected Exact Change: 0.9
+Borrower Balance: Final 9998.949669513085073359, Initial 9998.949669513085073359, Actual Change 0
+Borrower Expected Exact Change: 0
+      ✔ should correctly process dispute where owner wins with 100% severity (984ms)
+    Test Case 2: Dueño gana con 60% severidad
+
+=== INICIANDO TEST: Owner wins with 60% severity ===
+Transaction ID: 0
+Item Deposit: 1000000000000000000 wei (1 ETH)
+Initial Owner Reputation: 0, Initial Borrower Reputation: 0
+
+=== VOTACIÓN DE ÁRBITROS (TxId: 0) ===
+✓ Árbitro 1 (0x90f7...) votó: 60% a favor del dueño
+✓ Árbitro 2 (0x15d3...) votó: 60% a favor del dueño
+✓ Árbitro 3 (0x9965...) votó: 60% a favor del dueño
+
+--- Balances Capturados ---
+Owner Balance: 10000.049313961243835806 ETH
+Borrower Balance: 9998.949669513085073359 ETH
+SecureBorrowing Contract Balance: 1 ETH
+(Item Deposit para referencia: 1 ETH)
+
+=== FINALIZANDO DISPUTA ===
+✓ Disputa finalizada (Tx: 0x41f351470f95f3d4d8781efc565d552529fef16973856327c3c112c02dd8231e)
+Transaction logs for tx: 0x41f351470f95f3d4d8781efc565d552529fef16973856327c3c112c02dd8231e 
+Decoded event: FinalizerIncentivePaid {
+  originalTransactionId: 0n,
+  finalizer: '0x976EA74026E726554dB657fA54763abd0C3a0aa9',
+  amount: 5000000000000000n
+}
+Decoded event: ReputationUpdated {
+  arbitrator: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
+  reputationChange: 1n,
+  newReputation: 1n
+}
+Decoded event: ArbitratorIncentivePaid {
+  originalTransactionId: 0n,
+  arbitrator: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
+  amount: 31666666666666667n
+}
+Decoded event: ReputationUpdated {
+  arbitrator: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
+  reputationChange: 1n,
+  newReputation: 1n
+}
+Decoded event: ArbitratorIncentivePaid {
+  originalTransactionId: 0n,
+  arbitrator: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
+  amount: 31666666666666667n
+}
+Decoded event: ReputationUpdated {
+  arbitrator: '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc',
+  reputationChange: 1n,
+  newReputation: 1n
+}
+Decoded event: ArbitratorIncentivePaid {
+  originalTransactionId: 0n,
+  arbitrator: '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc',
+  amount: 31666666666666666n
+}
+Decoded event: ReputationUpdated {
+  user: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
+  newReputation: -2n,
+  isOwner: false
+}
+Decoded event: ReputationUpdated {
+  user: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  newReputation: 1n,
+  isOwner: true
+}
+Decoded event: ArbitrationOutcomeProcessed {
+  transactionId: 0n,
+  ownerWonDispute: true,
+  penaltyAmountPaidToOwner: 540000000000000000n,
+  refundAmountToBorrower: 360000000000000000n
+}
+Decoded event: DisputeFinalizedInArbitration {
+  originalTransactionId: 0n,
+  ownerWon: true,
+  penaltyToOwner: 600000000000000000n,
+  refundToBorrower: 400000000000000000n,
+  finalizer: '0x976EA74026E726554dB657fA54763abd0C3a0aa9'
+}
+
+=== RESULTADOS REPUTACIÓN ===
+Final Owner Reputation: 1 (Actual Cambio: 1, Esperado: 1)
+Final Borrower Reputation: -2 (Actual Cambio: -2, Esperado: -2)
+Owner Balance: Final 10000.589313961243835806, Initial 10000.049313961243835806, Actual Change 0.54
+Owner Expected Exact Change: 0.54
+Borrower Balance: Final 9999.309669513085073359, Initial 9998.949669513085073359, Actual Change 0.36
+Borrower Expected Exact Change: 0.36
+      ✔ should correctly process dispute where owner wins with 60% average severity
+    Test Case 3: Disputa con Depósito Cero
+
+=== INICIANDO TEST: Disputa con Depósito Cero ===
+Transaction ID: 0, Item Deposit: 0 ETH
+Initial Owner Reputation: 0, Initial Borrower Reputation: 0
+
+--- Balances Capturados ---
+Owner Balance: 10000.049857618578304239 ETH
+Borrower Balance: 9999.949774575236540429 ETH
+SecureBorrowing Contract Balance: 0 ETH
+(Item Deposit para referencia: 0 ETH)
+
+=== REPORTANDO DAÑO (SIN DEPÓSITO) ===
+✓ Daño reportado - transacción resuelta internamente
+Transaction logs for tx: 0x91682e1d7b739b85f45c8886673e5e2ffeea4a3891212bd8143fd9e9f26923a1 
+Decoded event: ReputationUpdated {
+  user: '0x71bE63f3384f5fb98995898A86B02Fb2426c5788',
+  newReputation: 1n,
+  isOwner: true
+}
+Decoded event: ReputationUpdated {
+  user: '0xFABB0ac9d68B0B445fB7357272Ff202C5651694a',
+  newReputation: -2n,
+  isOwner: false
+}
+Decoded event: DamageReportedNoArbitration {
+  transactionId: 0n,
+  itemOwner: '0x71bE63f3384f5fb98995898A86B02Fb2426c5788',
+  borrower: '0xFABB0ac9d68B0B445fB7357272Ff202C5651694a',
+  ownerReputationChange: 1n,
+  borrowerReputationChange: -2n
+}
+
+=== RESULTADOS REPUTACIÓN ===
+Final Owner Reputation: 1 (Actual Cambio: 1, Esperado: 1)
+Final Borrower Reputation: -2 (Actual Cambio: -2, Esperado: -2)
+Owner Balance: Final 10000.049675267313049239, Initial 10000.049857618578304239, Actual Change -0.000182351265255
+Owner Expected CloseTo Change: 0 (Margin: 0.01)
+Borrower Balance: Final 9999.949774575236540429, Initial 9999.949774575236540429, Actual Change 0
+Borrower Expected CloseTo Refund: 0 (Margin: 0.01)
+      ✔ should correctly process dispute with zero deposit, affecting only reputations
+    Test Case 4: Finalización Exitosa sin Disputa
+
+=== INICIANDO TEST: Finalización Exitosa sin Disputa ===
+Transaction ID: 0, Item ID: 0xb02ddd4f201e1ecd0a871b99ff5aa19eec436b67fdd04c26c984850c919576eb
+Item Deposit: 500000000000000000 wei (0.5 ETH)
+Initial Owner Reputation: 0, Initial Borrower Reputation: 0
+
+--- Balances Capturados ---
+Owner Balance: 10000.14951954718935341 ETH
+Borrower Balance: 9999.349539074720888699 ETH
+SecureBorrowing Contract Balance: 0.5 ETH
+(Item Deposit para referencia: 0.5 ETH)
+
+=== FINALIZANDO TRANSACCIÓN (SIN DAÑOS) ===
+✓ Transacción finalizada exitosamente sin daños reportados
+Transaction logs for tx: 0x7823eb5f7604a78832d033f962e9310166851c8bee0a3aeac5e38dbcf6d4c3ab 
+Decoded event: ReputationUpdated {
+  user: '0x71bE63f3384f5fb98995898A86B02Fb2426c5788',
+  newReputation: 2n,
+  isOwner: true
+}
+Decoded event: ReputationUpdated {
+  user: '0xFABB0ac9d68B0B445fB7357272Ff202C5651694a',
+  newReputation: 2n,
+  isOwner: false
+}
+Decoded event: TransactionSettledAmicably {
+  transactionId: 0n,
+  refundToBorrower: 500000000000000000n,
+  paymentToOwner: 0n
+}
+
+=== RESULTADOS REPUTACIÓN ===
+Final Owner Reputation: 2 (Actual Cambio: 2, Esperado: 2)
+Final Borrower Reputation: 2 (Actual Cambio: 2, Esperado: 2)
+Owner Balance: Final 10000.14931084506447377, Initial 10000.14951954718935341, Actual Change -0.00020870212487964
+Owner Expected CloseTo Change: 0 (Margin: 0.01)
+Borrower Balance: Final 9999.849539074720888699, Initial 9999.349539074720888699, Actual Change 0.5
+Borrower Expected CloseTo Refund: 0.5 (Margin: 0.01)
+      ✔ should properly complete a transaction without damages and return deposit
+    Test Case 5: Disputa sin Votos
+
+=== INICIANDO TEST: Disputa sin Votos ===
+Transaction ID: 0
+Item Deposit: 1000000000000000000 wei (1 ETH)
+Initial Owner Reputation: 0, Initial Borrower Reputation: 0
+
+--- Balances Capturados ---
+Owner Balance: 10000.049313961243835806 ETH
+Borrower Balance: 9998.949669513085073359 ETH
+SecureBorrowing Contract Balance: 1 ETH
+(Item Deposit para referencia: 1 ETH)
+Current voting period: 604800 seconds
+
+=== AVANZANDO EL TIEMPO PARA FINALIZAR PERIODO DE VOTACIÓN ===
+Tiempo avanzado 604860 segundos
+
+=== FINALIZANDO DISPUTA ===
+✓ Disputa finalizada (Tx: 0xb6270da1c55c4f64caef8b509a266e90f5077b734447eeeb4b670fb2603f8de3)
+Transaction logs for tx: 0xb6270da1c55c4f64caef8b509a266e90f5077b734447eeeb4b670fb2603f8de3 
+Decoded event: UnusedIncentivesReturned { originalTransactionId: 0n, amount: 100000000000000000n }
+Decoded event: ReputationUpdated {
+  arbitrator: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
+  reputationChange: -1n,
+  newReputation: -1n
+}
+Decoded event: ReputationUpdated {
+  arbitrator: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
+  reputationChange: -1n,
+  newReputation: -1n
+}
+Decoded event: ReputationUpdated {
+  arbitrator: '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc',
+  reputationChange: -1n,
+  newReputation: -1n
+}
+Decoded event: ReputationUpdated {
+  user: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  newReputation: -2n,
+  isOwner: true
+}
+Decoded event: ReputationUpdated {
+  user: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
+  newReputation: 1n,
+  isOwner: false
+}
+Decoded event: ArbitrationOutcomeProcessed {
+  transactionId: 0n,
+  ownerWonDispute: false,
+  penaltyAmountPaidToOwner: 0n,
+  refundAmountToBorrower: 900000000000000000n
+}
+Decoded event: DisputeFinalizedInArbitration {
+  originalTransactionId: 0n,
+  ownerWon: false,
+  penaltyToOwner: 0n,
+  refundToBorrower: 1000000000000000000n,
+  finalizer: '0x976EA74026E726554dB657fA54763abd0C3a0aa9'
+}
+
+=== RESULTADOS REPUTACIÓN ===
+Final Owner Reputation: -2 (Actual Cambio: -2, Esperado: -2)
+Final Borrower Reputation: 1 (Actual Cambio: 1, Esperado: 1)
+Owner Balance: Final 10000.049313961243835806, Initial 10000.049313961243835806, Actual Change 0
+Owner Expected Exact Change: 0
+Borrower Balance: Final 9999.949669513085073359, Initial 9998.949669513085073359, Actual Change 1
+Borrower Expected Exact Change: 1
+      ✔ should correctly handle dispute when no arbitrator votes are cast
+
+
+  5 passing (1s)
+

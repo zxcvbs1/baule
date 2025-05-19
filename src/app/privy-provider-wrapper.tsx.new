@@ -1,0 +1,32 @@
+// src/app/privy-provider-wrapper.tsx
+'use client';
+
+import { PrivyProvider } from '@privy-io/react-auth';
+import { baseSepolia, hardhat } from 'viem/chains'; // Import hardhat
+
+export default function PrivyProviderWrapper({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <PrivyProvider
+      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+      config={{
+        appearance: {
+          theme: 'light',
+          accentColor: '#676FFF',
+          logo: 'YOUR_LOGO_URL', // Optional: Replace if you have one
+        },
+        embeddedWallets: {
+          createOnLogin: 'users-without-wallets',
+          noPromptOnSignature: true, // Streamlines the user experience
+        },
+        defaultChain: hardhat, // Set default chain to Hardhat
+        supportedChains: [hardhat, baseSepolia], // Add Hardhat to supported chains
+      }}
+    >
+      {children}
+    </PrivyProvider>
+  );
+}

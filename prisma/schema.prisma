@@ -1,0 +1,71 @@
+datasource db {
+  provider = "sqlite" // Or "postgresql", "mysql", "sqlserver", "cockroachdb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Item {
+  id              String    @id @default(cuid())
+  name            String
+  description     String?
+  photoUrl        String?   // URL to the photo, can be a local path or a cloud storage URL
+  ownerAddress    String    // Wallet address of the item owner
+  borrowerAddress String?   // Wallet address of the current borrower, if any
+  status          String    @default("available") // e.g., "available", "borrowed", "in_dispute"
+  borrowingFee    String?   // The fee to borrow the item (stored as string representation of BigInt)
+  depositAmount   String?   // The deposit amount for the item (stored as string representation of BigInt)
+  contractItemId  String?   // The ID of the item in the smart contract, if listed (stored as string representation of BigInt)
+  itemNonce       String?   // Nonce (e.g., UUID) used for generating contractItemId
+  transactionId   String?   // The ID of the current transaction in the smart contract, if borrowed (stored as string representation of BigInt)
+  blockNumber     BigInt?   // The block number where the item listing transaction was included
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  borrowRequests  BorrowRequest[] // Relation to borrow requests
+}
+
+enum BorrowRequestStatus {
+  PENDING_OWNER_APPROVAL
+  APPROVED_BY_OWNER
+  REJECTED_BY_OWNER
+  COMPLETED // Borrower has successfully called borrowItem
+  CANCELLED_BY_BORROWER
+  EXPIRED // Optional: if requests should time out
+}
+
+model BorrowRequest {
+  id              String    @id @default(cuid())
+  itemId          String
+  item            Item      @relation(fields: [itemId], references: [id])
+  
+  borrowerAddress String    // Wallet address of the potential borrower
+  ownerAddress    String    // Wallet address of the item owner (denormalized for easier querying)
+  
+  status          BorrowRequestStatus @default(PENDING_OWNER_APPROVAL)
+  ownerSignature  String?   // Stores the EIP-712 signature from the owner
+  
+  // Optional: store details at the time of request if item details can change
+  // requestedFee      String? 
+  // requestedDeposit  String?
+
+  requestedAt     DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([itemId])
+  @@index([borrowerAddress])
+  @@index([ownerAddress])
+  @@index([status])
+}
+
+enum ItemStatus {
+  available
+  borrowed // Added for when an item is currently lent out
+  delisted
+}
+
+// You might want to add other models later, for example, for Users if Privy doesn\'t cover all your needs
+// or for specific transaction details if not all are on-chain.
